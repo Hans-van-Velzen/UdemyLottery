@@ -1,11 +1,14 @@
 pragma solidity ^0.8.4;
 
 contract Lottery {
+  //SPDX-License-Identifier: UNLICENSED
 
   address public manager;   // manager is the creator of this contract
   address[] players;
+  //boolean lotteryIsOpen;
   uint playerCounter;
   uint pricePool;
+  uint entryFee; // the number of ETH to pay in order to play
 
   event logPlayerEnters (
     uint indexed _id,
@@ -21,11 +24,19 @@ contract Lottery {
     manager = msg.sender;
     playerCounter = 0;
     pricePool = 0;
+    entryFee = 1;
+    //lotteryIsOpen = true;
   }
 
   function enterLottery () public payable {
+    // the lottery should be open
+    //require(lotteryIsOpen);
+
     // the manager can not enter himself
     require(msg.sender != manager);
+
+    // The value must be equal to the entryFee
+    require(msg.value == entryFee);
 
     playerCounter++;
     players.push(msg.sender);
@@ -33,14 +44,14 @@ contract Lottery {
     emit logPlayerEnters(playerCounter, msg.sender);
   }
 
-  function pickWinner () public {
-    // should be at leats 2 players
-    uint _id;
-    require(playerCounter > 1);
-
-    _id = 1;
-    emit logPickWinner(_id, players[_id]);
-  }
+  // function pickWinner () public {
+  //   // should be at leats 2 players
+  //   uint _id;
+  //   require(playerCounter > 1);
+  //
+  //   _id = 1;
+  //   emit logPickWinner(_id, players[_id]);
+  // }
 
   function getNumberOfPlayers () public view returns (uint) {
     return playerCounter;
@@ -50,5 +61,11 @@ contract Lottery {
     return players[_id];
   }
 
+  function getPricePool () public view returns (uint) {
+    return pricePool;
+  }
 
+  function getEntryFee () public view returns (uint) {
+    return entryFee;
+  }
 }
