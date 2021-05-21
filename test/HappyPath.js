@@ -8,22 +8,26 @@ let lottery;
 contract ('Lottery', function( accounts) {
   let lotteryInstance;
   let numberOfPlayers;
+  let players;
+  let pricePool;
+  let expectedPricePool = 0;
   //let receipt;
   let entryFee;
 
-  beforeEach("Set up contract instance for each test", async() => {
-    //accounts = await web3.eth.getAccounts();
-    web3.eth.getAccounts().then(function(acc){accounts=acc;})
-
+  before("Get the accounts once only", async() => {
+    accounts = await web3.eth.getAccounts();
+    //web3.eth.getAccounts().then(function(acc){accounts=acc;})
     lotteryInstance = await Lottery.deployed();
     entryFee = await lotteryInstance.getEntryFee();
+
   });
+  // beforeEach("Set up contract instance for each test", async() => {
+  //
+  //   lotteryInstance = await Lottery.deployed();
+  //   entryFee = await lotteryInstance.getEntryFee();
+  // });
 
 describe('Lottery Contract', () => {
-  // Test case - initialisation
-  // it("deploys a contract", () => {
-  //   assert.ok(lottery.options.address);
-  // });
     it("should be initialised with zero players", async() => {
       numberOfPlayers = await lotteryInstance.getNumberOfPlayers();
       assert.equal(numberOfPlayers, 0, "number of Players should be zero");
@@ -35,15 +39,10 @@ describe('Lottery Contract', () => {
     });
 
     // Lets enter a lottery
-    // const receipt = await chainListInstance.buyArticle(articleId, {
-    // from: buyer,
-    // value: web3.utils.toWei(articlePrice1, "ether")
-
     it("should allow a player to enter the lottery", async() => {
       try {
-//        const receipt = await lotteryInstance.enterLottery( {
-       //const receipt =
-       await lotteryInstance.enterLottery( {
+       let receipt;
+       receipt = await lotteryInstance.enterLottery( {
                 from: accounts[1],
                 value: web3.utils.toWei(entryFee, 'ether')
             });
@@ -51,7 +50,45 @@ describe('Lottery Contract', () => {
           catch (error) {
             console.log(error);
           }
-//      assert.equal(receipt.logs.length, 1, "There should be 1 event now");
+
+      // set the variables used for testing
+      numberOfPlayers = await lotteryInstance.getNumberOfPlayers();
+      players = await lotteryInstance.getPlayers();
+      expectedPricePool = entryFee;
+      pricePool = await lotteryInstance.getPricePool();
+      pricePool = web3.utils.fromWei(pricePool, 'ether');
+
+      assert.equal(players[0], accounts[1], "The first player should be " + accounts[1]);
+      assert.equal( players.length, 1, "There should be 1 player");
+      assert(numberOfPlayers == 1, "There should be 1 player");
+      assert.equal(expectedPricePool, pricePool, "There should be a pricepool of " + expectedPricePool);
+
+    });
+
+    it("should allow a second player to enter the lottery", async() => {
+      try {
+       let receipt;
+       receipt = await lotteryInstance.enterLottery( {
+                from: accounts[4],
+                value: web3.utils.toWei(entryFee, 'ether')
+            });
+          }
+          catch (error) {
+            console.log(error);
+          }
+
+      // Obtain the various states to be tested
+      numberOfPlayers = await lotteryInstance.getNumberOfPlayers();
+      players = await lotteryInstance.getPlayers();
+      pricePool = await lotteryInstance.getPricePool();
+      pricePool = web3.utils.fromWei(pricePool, 'ether');
+      expectedPricePool = expectedPricePool + entryFee;
+
+      assert.equal(numberOfPlayers, 2, "There should be 2 players");
+
+      assert.equal(players[1], accounts[4], "The second player should be " + accounts[4]);
+
+      assert.equal(pricePool == expectedPricePool, "There should be a pricepool of " + expectedPricePool + " but found " + pricePool);
 
     });
   });

@@ -5,7 +5,7 @@ contract Lottery {
 
   address payable public  manager;   // manager is the creator of this contract
   address payable[] players;
-  //boolean lotteryIsOpen;
+  bool lotteryIsOpen;
   uint playerCounter;
   uint pricePool;
   uint entryFee; // the number of ETH to pay in order to play
@@ -20,17 +20,38 @@ contract Lottery {
     address indexed _player
   );
 
+  event logLotteryOpen (
+    uint entryFee
+  );
+
   constructor ()  {
     manager = payable(msg.sender);
     playerCounter = 0;
     pricePool = 0;
     entryFee = 1;
-    //lotteryIsOpen = true;
+    lotteryIsOpen = true;
+  }
+
+  function restartLottery(uint _entryFee) public {
+    require(lotteryIsOpen = false);
+
+    // only the manager can restart the lottery
+    require(payable(msg.sender) == manager);
+
+    // entryFee should be 0.5 at least
+    require(_entryFee >= 1);
+
+    playerCounter = 0;
+    pricePool = 0;
+    entryFee = _entryFee;
+    lotteryIsOpen = true;
+
+    emit logLotteryOpen(_entryFee);
   }
 
   function enterLottery () public payable {
     // the lottery should be open
-    //require(lotteryIsOpen);
+    require(lotteryIsOpen);
 
     // the manager can not enter himself
     address payable _sender = payable(msg.sender);
@@ -39,10 +60,10 @@ contract Lottery {
     // The value must be equal to the entryFee
     require(msg.value >= entryFee);
 
-    // increase the pricepool
-     pricePool = pricePool + msg.value;
-     playerCounter++;
-     players.push(payable(msg.sender));
+    // increase the pricepool, playercounter and add the player to the array
+    pricePool = pricePool + msg.value;
+    playerCounter++;
+    players.push(payable(msg.sender));
 
     emit logPlayerEnters(playerCounter, msg.sender);
   }
