@@ -27,7 +27,7 @@ contract ('Lottery', function( accounts) {
   //   entryFee = await lotteryInstance.getEntryFee();
   // });
 
-describe('Lottery Contract', () => {
+describe('Lottery Contract Happy Path', () => {
     it("should be initialised with zero players", async() => {
       numberOfPlayers = await lotteryInstance.getNumberOfPlayers();
       assert.equal(numberOfPlayers, 0, "number of Players should be zero");
@@ -82,14 +82,61 @@ describe('Lottery Contract', () => {
       players = await lotteryInstance.getPlayers();
       pricePool = await lotteryInstance.getPricePool();
       pricePool = web3.utils.fromWei(pricePool, 'ether');
-      expectedPricePool = expectedPricePool + entryFee;
+      expectedPricePool = entryFee * 2;
 
       assert.equal(numberOfPlayers, 2, "There should be 2 players");
 
       assert.equal(players[1], accounts[4], "The second player should be " + accounts[4]);
 
-      assert.equal(pricePool == expectedPricePool, "There should be a pricepool of " + expectedPricePool + " but found " + pricePool);
+      assert.equal(pricePool, expectedPricePool, "There should be a pricepool of " + expectedPricePool + " but found " + pricePool);
 
+    });
+
+    it("should allow to pick a winner", async() => {
+      try {
+       let receipt;
+       receipt = await lotteryInstance.pickWinner( {
+                from: accounts[0],
+                value: web3.utils.toWei(entryFee, 'ether')
+            });
+          }
+          catch (error) {
+            console.log(error);
+          }
+
+          numberOfPlayers = await lotteryInstance.getNumberOfPlayers();
+          players = await lotteryInstance.getPlayers();
+          pricePool = await lotteryInstance.getPricePool();
+          pricePool = web3.utils.fromWei(pricePool, 'ether');
+
+          assert.equal(numberOfPlayers, 0, "There should be 0 players");
+
+          assert.equal(pricePool, 0, "The pricepool should be 0");
+    });
+
+    it("Should allow to restart the lottery", async() => {
+      try{
+        entryFee = 2; // entryFee of 2 Ether
+        let receipt
+        receipt = await lotteryInstance.restartLottery(entryFee, {
+          from: accounts[0]
+        });
+      }
+      catch (error) {
+        console.log(error);
+      }
+
+      numberOfPlayers = await lotteryInstance.getNumberOfPlayers();
+      players = await lotteryInstance.getPlayers();
+      pricePool = await lotteryInstance.getPricePool();
+      pricePool = web3.utils.fromWei(pricePool, 'ether');
+      let _entryFee = await lotteryInstance.getEntryFee();
+
+      assert.equal(numberOfPlayers, 0, "There should be 0 players");
+
+      assert.equal(pricePool, 0, "The pricepool should be 0");
+
+      assert.equal(entryFee, _entryFee, "the entryFee should be " + entryFee);
     });
   });
 })

@@ -9,6 +9,7 @@ contract Lottery {
   uint playerCounter;
   uint pricePool;
   uint entryFee; // the number of ETH to pay in order to play
+  uint minimumNumberOfPlayers;
 
   event logPlayerEnters (
     uint indexed _id,
@@ -24,6 +25,10 @@ contract Lottery {
     uint entryFee
   );
 
+  event logTrace (
+    string message
+  );
+
   constructor ()  {
     manager = payable(msg.sender);
     playerCounter = 0;
@@ -33,8 +38,9 @@ contract Lottery {
   }
 
   function restartLottery(uint _entryFee) public {
-    require(lotteryIsOpen = false);
+    require(lotteryIsOpen == false);
 
+    // add a minimum number of players
     // only the manager can restart the lottery
     require(payable(msg.sender) == manager);
 
@@ -68,14 +74,31 @@ contract Lottery {
     emit logPlayerEnters(playerCounter, msg.sender);
   }
 
-  // function pickWinner () public {
-  //   // should be at leats 2 players
-  //   uint _id;
-  //   require(playerCounter > 1);
-  //
-  //   _id = 1;
-  //   emit logPickWinner(_id, players[_id]);
-  // }
+  function random() private view returns(uint) {
+      // take the current block difficulty
+      // and the time
+      // and the addresses of the players
+      // hash them and convert to uint
+      return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, players)));
+  }
+
+  function pickWinner () public payable {
+    // should be at leats 2 players
+    uint _id;
+    require(playerCounter > 1);
+
+    // close the lottery
+    lotteryIsOpen = false;
+
+    _id = random() % players.length;
+    emit logPickWinner(_id, players[_id]);
+
+    // send the payment
+    players[_id].transfer(address(this).balance);
+    pricePool = 0;
+    playerCounter = 0;
+    delete players;
+  }
 
   function getNumberOfPlayers () public view returns (uint) {
     return playerCounter;
@@ -87,6 +110,10 @@ contract Lottery {
 
   function getPlayer (uint _id) public view returns (address payable) {
     return players[_id];
+  }
+
+  function getManager () public view returns (address payable) {
+    return manager;
   }
 
   function getPricePool () public view returns (uint) {
